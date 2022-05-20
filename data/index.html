@@ -1,0 +1,217 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>VLight</title>
+        <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;300;400;600;700;900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="main.css">
+    </head>
+    <body>
+        <div id="wrapper">
+            <div class="block">
+                <div class="title">Settings</div>
+                <div class="slider__container">    
+                    Brightness:
+                    <input type="range" min="0" max="255" value="255" class="slider" id="br__slider">
+                </div>
+                <a href="javascript:changeMode();"><button id="bt__mode">STATIC MODE</button></a>
+            </div>
+            <div class="block">
+                <div class="title"><h2>Main</h2></div>
+                <div id="wheel__range">  
+                    <div id="wheel">
+                        <div id="wheel__pointer"></div>
+                        <div class="wheel__text">
+                            <div id="wheel__title"> HUE </div>
+                            <div id="wheel__value"> 100% </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slider__container">    
+                    <div id="sat__text">Saturation:</div>
+                    <input type="range" min="0" max="255" value="0" class="slider" id="sat__slider">
+                </div>
+            </div>
+            <div class="block">
+                <div class="title">Color Music Settings</div>       
+                <a href="javascript:setNoise();"><button>SET MINIMAL NOISE VALUE</button></a>
+                <div class="slider__container">    
+                    Sensitivity:
+                    <input type="range" min="0" max="600" value="450" class="slider" id="sens__slider">
+                </div>
+            </div>
+        </div>
+        <script>
+            var bright = document.getElementById("br__slider");
+            var sens   = document.getElementById("sens__slider");
+            var sat    = document.getElementById("sat__slider");
+
+            var mode = "STATIC MODE";
+
+            bright.oninput  = function() { ajaxLoad("chVal/?bright=" + formattedByte(this.value)); }
+            sens.oninput    = function() { ajaxLoad("chVal/?sens=" + formattedByte(this.value)); }
+            sat.oninput     = function() { ajaxLoad("chVal/?sat=" + formattedByte(this.value)); }
+
+            function sendHUE(val) {
+                ajaxLoad("chVal/?hue=" + formattedByte(Math.floor((val * 256) / 360)));
+            }
+
+            function setNoise(val) {
+                ajaxLoad("noise");
+            }
+
+            function formattedByte(val) {
+                return (parseInt(val));
+            }
+
+            // AJAX
+            var ajaxRequest = null;
+
+            if (window.XMLHttpRequest)  { ajaxRequest = new XMLHttpRequest(); }
+            else                        { ajaxRequest = new ActiveXObject("Microsoft.XMLHTTP"); }
+
+            function ajaxLoad(ajaxUrl) {
+                ajaxRequest.open("GET", "/" + ajaxUrl, true);
+                ajaxRequest.send();
+            }
+
+            function changeMode() {
+                ajaxRequest.onreadystatechange = function() {
+                    if (ajaxRequest.readyState == 4 && ajaxRequest.status == 200) {
+                        var ajaxResult = ajaxRequest.responseText;
+                        mode = ajaxResult;
+
+                        var tSat = document.getElementById("sat__text");
+                        var tHue = document.getElementById("wheel__title");
+
+                        if (mode == "STATIC MODE") {
+                            cur.style.borderColor = "rgb(54, 54, 54)";
+                            sat.style.background = "linear-gradient(90deg, hsl(" + (360 - hue) + ", 100%, 50%), white)";
+                            wheel.style.background = "conic-gradient(red, violet, blue, cyan, lime, yellow, red)";
+                            tSat.innerHTML = "Saturation:";
+                            tHue.innerHTML = "HUE";
+                        } else {
+                            cur.style.backgroundColor = "white";
+                            cur.style.borderColor = "#ff3366";
+                            sat.style.background = "linear-gradient(90deg, #29203f, #ff009d)";
+                            wheel.style.background = "conic-gradient(#29203f, #ff009d 96%, #29203f)";
+                            tSat.innerHTML = "Speed:";
+                            tHue.innerHTML = "VALUE";
+                        }
+                        document.getElementById("bt__mode").innerHTML = mode;
+                    }
+                }
+                ajaxRequest.open("GET", "/chMode", true);
+                ajaxRequest.send();
+            }
+
+
+        </script>
+        <script>
+            var cur = document.getElementById('wheel__pointer');
+            var wheel = document.getElementById('wheel__range');
+            var disValue = document.getElementById('wheel__value');
+            var sat = document.getElementById('sat__slider');
+            var canDrag = true;
+            var hue;
+            var mobile = false;
+
+            function radToDeg(radians) {
+                var pi = Math.PI;
+                return radians * (180 / pi);
+            }
+
+            window.addEventListener('DOMContentLoaded', moveAt(wheel.offsetLeft+wheel.offsetWidth/2, 1));
+            document.body.style.overflow = 'visible';
+
+            cur.ontouchstart = function(e) {
+                preventDefault(e); 
+
+                canDrag = true;
+                mobile = true;
+                
+                document.body.appendChild(cur);
+                cur.style.zIndex = 1000;
+
+                cur.ondragstart = function() { return false; };
+                document.onselect = function() { return false; }
+
+                document.ontouchmove = function(e) { 
+                    
+                    document.onselect = null; 
+                    moveAt(e.changedTouches[0].clientX, e.changedTouches[0].clientY + document.body.scrollTop);
+                }
+
+            }
+            
+            cur.onmousedown = function(e) {
+                canDrag = true;
+
+                moveAt(e.pageX, e.pageY);
+                document.body.appendChild(cur);
+                cur.style.zIndex = 1000;
+            
+                cur.ondragstart = function() { return false; };
+                document.ondblclick = function() { return false; }
+                document.onselect = function() { return false; }
+                document.onmousemove = function(e) { 
+                    document.onselect = null; 
+                    moveAt(e.pageX, e.pageY);
+                }
+                cur.onmouseup = function() { 
+                    document.body.style.overflow = 'auto';
+                    canDrag = false;
+                    document.onmousemove = null; 
+                    cur.onmouseup = null; 
+                }
+            }
+
+            function moveAt(posX, posY) {
+                if (!canDrag) { 
+                    if (mobile) {
+                        document.body.style.overflow = 'auto';
+                    }
+                    return; 
+                } else {
+                    if (mobile) {
+                        document.body.style.overflow = 'hidden';    
+                    }
+                }
+                var radius = wheel.offsetWidth / 2;
+                var curR   = cur.offsetWidth   / 2;
+                var wheelX = wheel.offsetLeft + radius;
+                var wheelY = wheel.offsetTop  + radius;
+                var angle;
+                
+                angle = Math.atan2((posY - wheelY), (posX - wheelX));
+                hue = (radToDeg(angle)  + 450) % 360;
+
+                cur.style.left = wheelX + (radius - 18) * Math.cos(angle) - curR + 'px';
+                cur.style.top  = wheelY + (radius - 18) * Math.sin(angle) - curR + 'px';
+
+                if (mode == "STATIC MODE") {
+                    cur.style.backgroundColor = "hsl(" + (360 - hue) + ", 100%, 50%)";
+                    sat.style.background = "linear-gradient(90deg, hsl(" + (360 - hue) + ", 100%, 50%), white)";
+                } 
+                
+                disValue.innerHTML = Math.round((100 * hue) / 360) + '%';
+                sendHUE(hue);
+            }
+            
+            function preventDefault(e) {
+                e = e || window.event;
+                if (e.preventDefault)
+                    e.preventDefault();
+                e.returnValue = false;  
+            }
+            
+            document.onmouseup = function() {
+                canDrag = false;
+            }
+
+            document.ontouchend = function() {
+                canDrag = false;
+            }
+
+        </script>
+    </body>
+</html>

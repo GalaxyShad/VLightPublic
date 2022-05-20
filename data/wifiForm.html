@@ -1,0 +1,38 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <form>
+            <fieldset>
+                <div>
+                    <label for="ssid">SSID</label>
+                    <input value="" id="ssid" placeholder="SSID">
+                </div>
+                <div>
+                    <label for="password">PASSWORD</label>
+                    <input type="password" value="" id="password" placeholder="PASSWORD">
+                </div>
+                <div>
+                    <button class="primary" id="savebtn" type="button" onclick="myFunction()">SAVE</button>
+                </div>
+            </fieldset>
+        </form>
+        <script>
+            async function myFunction() {
+                console.log("button was clicked!");
+                const ssid = document.getElementById("ssid").value;
+                const password = document.getElementById("password").value;
+                const data = { ssid: ssid, password: password };
+
+                let response = await fetch('/settings', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                let result = await response.text();
+                console.log(result);
+            };
+        </script>
+    </body>
+
+</html>
